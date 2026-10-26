@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Four in a Row</title>
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --ink: #2b2b2b;
+    --board: #2f4858;
+    --hole: #f4f1ea;
+    --p1: #e4572e;
+    --p2: #f3a712;
+    --win: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: 2rem;
+    letter-spacing: 0.02em;
+  }
+
+  #status {
+    min-height: 1.5em;
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .chip {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    border-radius: 50%;
+  }
+  .chip.p1 { background: var(--p1); }
+  .chip.p2 { background: var(--p2); }
+
+  #board {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    padding: 12px;
+    width: min(92vw, 520px);
+    background: var(--board);
+    border-radius: 16px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .cell {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--hole);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #board.over .cell { cursor: default; }
+
+  /* Light up the column under the mouse */
+  .cell.hover { background: #dcd6c8; }
+
+  .cell .disc {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    animation: drop 0.35s ease-in;
+  }
+  .cell .disc.p1 { background: var(--p1); }
+  .cell .disc.p2 { background: var(--p2); }
+
+  .cell .disc.win {
+    box-shadow: inset 0 0 0 5px var(--win);
+    animation: pulse 0.8s ease-in-out infinite alternate;
+  }
+
+  @keyframes drop {
+    from { transform: translateY(var(--fall, -400%)); }
+    to   { transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    from { filter: brightness(1); }
+    to   { filter: brightness(1.25); }
+  }
+
+  .controls {
+    margin-top: 20px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  button {
+    font: inherit;
+    font-weight: 600;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: var(--board);
+    color: #fff;
+    cursor: pointer;
+  }
+  button:hover { filter: brightness(1.15); }
+
+  .score { font-weight: 600; }
+</style>
+</head>
+<body>
+  <h1>Four in a Row</h1>
+  <div id="status"></div>
+  <div id="board"></div>
+
+  <div class="controls">
+    <span class="score"><span class="chip p1"></span> Red: <span id="score1">0</span></span>
+    <button id="reset">New Game</button>
+    <span class="score"><span class="chip p2"></span> Yellow: <span id="score2">0</span></span>
+  </div>
+
+<script>
+  const ROWS = 6;
+  const COLS = 7;
+  const NAMES = { 1: "Red", 2: "Yellow" };
+
+  const boardEl = document.getElementById("board");
+  const statusEl = document.getElementById("status");
+  const scores = { 1: 0, 2: 0 };
+
+  let grid;          // grid[row][col] = 0 (empty), 1, or 2; row 0 is the top
+  let current;       // whose turn it is
+  let gameOver;
+  let starter = 1;   // alternate who goes first each game
+
+  // Build the 42 cells once; row-major order matches the CSS grid
+  const cells = [];
+  for (let r = 0; r < ROWS; r++) {
+    cells.push([]);
+    for (let c = 0; c < COLS; c++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.addEventListener("click", () => play(c));
+      cell.addEventListener("mouseenter", () => highlight(c));
+      cell.addEventListener("mouseleave", () => highlight(null));
+      boardEl.appendChild(cell);
+      cells[r].push(cell);
+    }
+  }
+
+  function newGame() {
+    grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+    current = starter;
+    starter = starter === 1 ? 2 : 1;
+    gameOver = false;
+    boardEl.classList.remove("over");
+    cells.flat().forEach(cell => (cell.innerHTML = ""));
+    updateStatus();
+  }
+
+  function highlight(col) {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        cells[r][c].classList.toggle("hover", !gameOver && c === col && grid[r][c] === 0);
+      }
+    }
+  }
+
+  function play(col) {
+    if (gameOver) return;
+
+    // Find the lowest empty row in this column
+    let row = -1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (grid[r][col] === 0) { row = r; break; }
+    }
+    if (row === -1) return; // column is full
+
+    grid[row][col] = current;
+    const disc = document.createElement("div");
+    disc.className = `disc p${current}`;
+    // Fall distance scales with how far the disc drops
+    disc.style.setProperty("--fall", `${-(row + 1) * 110}%`);
+    cells[row][col].appendChild(disc);
+
+    const line = findWin(row, col);
+    if (line) {
+      gameOver = true;
+      line.forEach(([r, c]) => cells[r][c].firstChild.classList.add("win"));
+      scores[current]++;
+      document.getElementById(`score${current}`).textContent = scores[current];
+      statusEl.innerHTML = `<span class="chip p${current}"></span> ${NAMES[current]} wins!`;
+    } else if (grid[0].every(v => v !== 0)) {
+      gameOver = true;
+      statusEl.textContent = "It's a draw!";
+    } else {
+      current = current === 1 ? 2 : 1;
+      updateStatus();
+    }
+
+    if (gameOver) boardEl.classList.add("over");
+    highlight(gameOver ? null : col);
+  }
+
+  // Check the four line directions through the newly placed disc.
+  // Returns the winning cells, or null if there's no four-in-a-row.
+  function findWin(row, col) {
+    const player = grid[row][col];
+    const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+
+    for (const [dr, dc] of directions) {
+      const line = [[row, col]];
+      for (const sign of [1, -1]) {
+        let r = row + dr * sign;
+        let c = col + dc * sign;
+        while (r >= 0 && r < ROWS && c >= 0 && c < COLS && grid[r][c] === player) {
+          line.push([r, c]);
+          r += dr * sign;
+          c += dc * sign;
+        }
+      }
+      if (line.length >= 4) return line;
+    }
+    return null;
+  }
+
+  function updateStatus() {
+    statusEl.innerHTML = `<span class="chip p${current}"></span> ${NAMES[current]}'s turn`;
+  }
+
+  // Number keys 1–7 drop a disc in that column
+  document.addEventListener("keydown", e => {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= COLS) play(n - 1);
+  });
+
+  document.getElementById("reset").addEventListener("click", newGame);
+
+  newGame();
+</script>
+</body>
+</html>
