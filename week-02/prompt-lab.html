@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Lab</title>
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --ink: #2b2b2b;
+    --muted: #6b6b6b;
+    --panel: #ffffff;
+    --line: #dcd6c8;
+    --accent: #2f4858;
+    --you: #e4572e;
+    --claude: #f3a712;
+    --error: #b3261e;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  main {
+    width: min(100%, 760px);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 2rem;
+    letter-spacing: 0.02em;
+  }
+
+  .model {
+    color: var(--muted);
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 0.95rem;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .hint {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  input, textarea {
+    width: 100%;
+    font: inherit;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ink);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  textarea:disabled { background: #f7f5f0; color: var(--muted); }
+
+  #transcript {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 120px;
+  }
+
+  #transcript .empty {
+    color: var(--muted);
+    text-align: center;
+    margin: auto;
+  }
+
+  .msg {
+    border-left: 4px solid var(--line);
+    padding: 4px 0 4px 12px;
+  }
+  .msg.you { border-color: var(--you); }
+  .msg.claude { border-color: var(--claude); }
+  .msg.error { border-color: var(--error); color: var(--error); }
+
+  .msg .who {
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+
+  /* Messages are inserted as text, never HTML, so keep the line breaks */
+  .msg .body {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+  }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  button {
+    font: inherit;
+    font-weight: 600;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { filter: brightness(1.15); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+
+  #status { color: var(--muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Prompt Lab</h1>
+    <div class="model">Model: <span id="modelName"></span></div>
+  </header>
+
+  <section class="panel">
+    <label for="apiKey">Anthropic API key</label>
+    <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-...">
+    <p class="hint">Enter your key each session. It is kept only in this page's memory and is never saved to a file or browser storage &mdash; reloading the page clears it.</p>
+  </section>
+
+  <section class="panel">
+    <label for="system">System prompt</label>
+    <textarea id="system" placeholder="Optional. Example: You are a concise business analyst."></textarea>
+    <p class="hint">Locked once the conversation starts. Use Clear to start over with a new one.</p>
+  </section>
+
+  <section class="panel" id="transcript"></section>
+
+  <section class="panel">
+    <label for="prompt">Your message</label>
+    <textarea id="prompt" placeholder="Type a prompt. Ctrl+Enter to send."></textarea>
+    <div class="controls" style="margin-top: 12px;">
+      <button id="send">Send</button>
+      <button id="export" class="secondary">Export</button>
+      <button id="clear" class="secondary">Clear</button>
+      <span id="status"></span>
+    </div>
+  </section>
+</main>
+
+<script>
+  const MODEL = "claude-sonnet-5";
+  const API_URL = "https://api.anthropic.com/v1/messages";
+
+  const apiKeyEl = document.getElementById("apiKey");
+  const systemEl = document.getElementById("system");
+  const promptEl = document.getElementById("prompt");
+  const transcriptEl = document.getElementById("transcript");
+  const statusEl = document.getElementById("status");
+  const sendBtn = document.getElementById("send");
+  const exportBtn = document.getElementById("export");
+  const clearBtn = document.getElementById("clear");
+
+  document.getElementById("modelName").textContent = MODEL;
+
+  let history;   // messages sent to the API: { role, content }
+  let log;       // what the page shows and exports: { who: "You" | "Claude", text }
+  let busy = false;
+
+  function reset() {
+    history = [];
+    log = [];
+    systemEl.disabled = false;
+    render();
+  }
+
+  function render() {
+    transcriptEl.innerHTML = "";
+    if (log.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "empty";
+      empty.textContent = "No messages yet.";
+      transcriptEl.appendChild(empty);
+    }
+    for (const entry of log) {
+      addBubble(entry.who === "You" ? "you" : "claude", entry.who, entry.text);
+    }
+    exportBtn.disabled = log.length === 0;
+    sendBtn.disabled = busy;
+  }
+
+  function addBubble(kind, who, text) {
+    const msg = document.createElement("div");
+    msg.className = `msg ${kind}`;
+    const whoEl = document.createElement("div");
+    whoEl.className = "who";
+    whoEl.textContent = who;
+    const body = document.createElement("div");
+    body.className = "body";
+    body.textContent = text;
+    msg.append(whoEl, body);
+    transcriptEl.appendChild(msg);
+    msg.scrollIntoView({ block: "nearest" });
+  }
+
+  async function send() {
+    const apiKey = apiKeyEl.value.trim();
+    const text = promptEl.value.trim();
+    if (busy || !text) return;
+    if (!apiKey) {
+      statusEl.textContent = "Enter your API key first.";
+      apiKeyEl.focus();
+      return;
+    }
+
+    busy = true;
+    systemEl.disabled = true;
+    history.push({ role: "user", content: text });
+    log.push({ who: "You", text });
+    promptEl.value = "";
+    statusEl.textContent = "Waiting for Claude...";
+    render();
+
+    const body = { model: MODEL, max_tokens: 16000, messages: history };
+    const system = systemEl.value.trim();
+    if (system) body.system = system;
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2026-10-21",
+          // Required for calling the API straight from a web page
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error?.message || `Request failed (HTTP ${res.status})`);
+      }
+      if (data.stop_reason === "refusal") {
+        throw new Error("Claude declined to answer this prompt.");
+      }
+
+      const reply = data.content
+        .filter(block => block.type === "text")
+        .map(block => block.text)
+        .join("\n\n");
+
+      // Send the full content back on later turns, not just the text
+      history.push({ role: "assistant", content: data.content });
+      log.push({ who: "Claude", text: reply });
+      statusEl.textContent = data.stop_reason === "max_tokens"
+        ? "Reply was cut off at the token limit."
+        : `${data.usage.input_tokens} in / ${data.usage.output_tokens} out tokens`;
+    } catch (err) {
+      // Roll back the failed turn so the prompt can be fixed and resent
+      history.pop();
+      log.pop();
+      promptEl.value = text;
+      if (history.length === 0) systemEl.disabled = false;
+      statusEl.textContent = "";
+      busy = false;
+      render();
+      addBubble("error", "Error", err.message);
+      return;
+    }
+
+    busy = false;
+    render();
+  }
+
+  // Build the Markdown export: model on the first line, then each message
+  // under a ### System / ### You / ### Claude heading
+  function toMarkdown() {
+    const lines = [
+      `# Prompt Lab Run — ${MODEL}`,
+      "",
+      `Exported: ${new Date().toLocaleString()}`,
+      "",
+      "### System",
+      "",
+      systemEl.value.trim() || "(none)",
+      "",
+    ];
+    for (const entry of log) {
+      lines.push(`### ${entry.who}`, "", entry.text, "");
+    }
+    return lines.join("\n");
+  }
+
+  function exportRun() {
+    if (log.length === 0) return;
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[-:]/g, "").replace("T", "-");
+    const blob = new Blob([toMarkdown()], { type: "text/markdown" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `prompt-lab-${stamp}.md`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    statusEl.textContent = "Exported. Save it in week-02/runs.";
+  }
+
+  sendBtn.addEventListener("click", send);
+  exportBtn.addEventListener("click", exportRun);
+  clearBtn.addEventListener("click", () => {
+    if (log.length && !confirm("Clear this conversation?")) return;
+    statusEl.textContent = "";
+    reset();
+  });
+
+  promptEl.addEventListener("keydown", e => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) send();
+  });
+
+  reset();
+</script>
+</body>
+</html>
