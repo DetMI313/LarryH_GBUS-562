@@ -1,0 +1,6 @@
+# Chroma vector databases (one subfolder per document folder) - rebuilt automatically by ask.py
+chroma_db/
+
+# Local Python environment and caches
+.venv/
+__pycache__/
