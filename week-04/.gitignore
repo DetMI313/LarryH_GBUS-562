@@ -1,0 +1,5 @@
+# Chroma vector databases - rebuilt automatically by hr_mcp_server.py (or with --rebuild-index)
+chroma_db/
+
+# Python caches
+__pycache__/

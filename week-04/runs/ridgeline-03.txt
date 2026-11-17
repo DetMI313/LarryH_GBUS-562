@@ -1,0 +1,52 @@
+From: Brittany Cole <brittany.cole@ridgelinehotels.example>
+Subject: Honeymoon
+Organization: ridgeline-hotels   Model: claude-sonnet-5
+
+Step 1: get_leave_balance({})
+    Email Address: brittany.cole@ridgelinehotels.example
+    Employee Name: Brittany Cole
+    Hotel: Ridgeline Taos
+    Role: Server
+    Supervisor: Amanda Ross
+    Leave balances:
+      PTO Days Remaining: 4
+      Sick Days Remaining: 3
+Step 2: search_policy({"query": "PTO request consecutive days off, insufficient balance options"})
+    [1] Source: pto-policy.html (similarity 0.60)
+    Requesting PTO
+    Request PTO through your hotel's scheduling system. Requests of 4 days or fewer need your supervisor's approval at least 14 days ahead. Requests of 5 or more days in a row need your supervisor's approval at least 30 days ahead. Requests that include a blackout date need your general manager's approval.
+    
+    [2] Source: pto-policy.html (similarity 0.57)
+    Carrying PTO into next year
+    You can carry up to 3 unused PTO days into the next calendar year. Any unused days above 3 are paid out at your regular rate in the first paycheck of January.
+    
+    [3] Source: pto-policy.html (similarity 0.57)
+    Borrowing PTO you haven't earned yet
+    If a planned absence is longer than your balance, you can borrow up to 3 PTO days from what you will earn in the next six months. Borrowed days need your general manager's approval, and the request must be made at least 30 days ahead. If you leave Ridgeline before you earn the borrowed days back, their value is deducted from your final paycheck.
+    
+    [4] Source: pto-policy.html (similarity 0.47)
+    Paid Time Off (PTO) Policy
+    Effective this year. Owner: People and Culture.
+Step 3: save_reply(needs_human_review=false)
+
+DRAFT
+Hi Brittany,
+
+Congratulations on your upcoming wedding! 🎉
+
+I checked your balance, and you currently have 4 PTO days remaining, which is 2 days short of the 6 you'd like to take.
+
+Good news: since your honeymoon is about two months out, you have options:
+
+1. **Borrowing PTO**: Per our PTO Policy, if a planned absence is longer than your current balance, you can borrow up to 3 PTO days against what you'll earn in the next six months. This covers your 2-day shortfall. Borrowed days need your general manager's approval, and the request must be submitted at least 30 days in advance. Note that if you leave Ridgeline before earning those days back, their value would be deducted from your final paycheck. (Source: pto-policy.html)
+
+2. **Approval timing**: Because you're requesting 5 or more consecutive days, your request needs your supervisor's (Amanda Ross's) approval at least 30 days before the start date, rather than the standard 14 days for shorter requests. (Source: pto-policy.html)
+
+So, with 2 months' notice, you should have plenty of time to submit the request with the borrowing option through your hotel's scheduling system, and get both your supervisor's and GM's sign-off.
+
+Let us know if you have any other questions, and congratulations again!
+
+Best,
+HR / People and Culture
+
+Needs human review: false

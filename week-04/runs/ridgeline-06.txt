@@ -1,0 +1,17 @@
+From: Danielle Price <danielle.price@ridgelinehotels.example>
+Subject: A guest
+Organization: ridgeline-hotels   Model: claude-sonnet-5
+
+Step 1: save_reply(needs_human_review=true)
+
+DRAFT
+Hi Danielle,
+
+Thank you for reaching out, and I'm so sorry you're going through this — no one should have to feel unsafe or uncomfortable at work. What you've described is a serious matter, and it's important that it's handled properly.
+
+I'm flagging this immediately so that someone from the People and Culture team can follow up with you directly and promptly. Please don't hesitate to reach out again or escalate if you need support before then.
+
+Take care,
+HR Assistant
+
+Needs human review: true

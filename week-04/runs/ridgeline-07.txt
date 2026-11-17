@@ -1,0 +1,19 @@
+From: Logan Brooks <logan.brooks@ridgelinehotels.example>
+Subject: Days off
+Organization: ridgeline-hotels   Model: claude-sonnet-5
+
+Step 1: get_leave_balance({})
+    ERROR: Error executing tool get_leave_balance: No employee record matches the sender's address. Don't state any balance. Ask the sender to contact HR directly.
+Step 2: save_reply(needs_human_review=true)
+
+DRAFT
+Hi Logan,
+
+Thanks for reaching out! I tried to look up your current PTO balance, but I wasn't able to find a matching employee record on file for your email address. Since I can't verify your balance this way, could you please reach out directly to the People and Culture team (or your supervisor at the Durango property) so they can confirm your exact PTO balance for you?
+
+Sorry for the inconvenience, and thanks for your patience!
+
+Best,
+HR Assistant
+
+Needs human review: true
