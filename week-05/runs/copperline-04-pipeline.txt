@@ -1,0 +1,58 @@
+Company: Copperline   Folder: week-05/copperline-coffee
+Columns read from the CSVs (internal name=header in the file):
+  parts.csv: part_id=part_id, supplier=supplier, on_hand=on_hand, description=description
+  inbound.csv: po_number=po_number, part_id=part_id, supplier=supplier, arrives_day=arrives_in_days, qty=qty
+  bill-of-materials.csv: part_id=part_id, per_unit=per_unit, product=product
+  orders.csv: order_id=order_id, contact_email=contact_email, customer=customer, late_penalty=late_penalty, ship_day=ship_by_day, quantity=units, product=product
+  suppliers.csv: contact_email=contact_email, supplier=supplier, part_id=part_id, contact_name=contact_name
+From: Owen Brady <o.brady@pelhamfittings.example>
+Subject: Plant maintenance closure - PO-5540 not affected
+Coordinator: fixed pipeline   Model: claude-sonnet-5
+
+STEP 1: supply analyst
+
+>>> HANDOFF  coordinator -> supply analyst: supplier email
+    From: Owen Brady <o.brady@pelhamfittings.example>
+    Subject: Plant maintenance closure - PO-5540 not affected
+    supply analyst tool 1: get_part({"part_id": "SW-3"})
+    supply analyst tool 2: get_orders_for_part({"part_id": "SW-3"})
+    supply analyst tool 3: check_coverage({"part_id": "SW-3", "arrivals": [{"day": 11, "qty": 60}]})
+    [tokens] supply analyst: 7,567 in / 528 out
+
+>>> HANDOFF  supply analyst -> coordinator: ANALYST'S BRIEF, in full (3 tool calls)
+    {
+      "part_id": "SW-3",
+      "what_changed": "No change: PO-5540 (60 SW-3 steam wands) still arrives on day 11, before the supplier's one-week maintenance closure that starts on day 28.",
+      "orders_at_risk": [],
+      "options": [],
+      "decisions_for_a_person": [],
+      "supplier_questions": []
+    }
+
+STEP 2: skipped, no orders at risk
+
+STEP 3: reply to the supplier
+
+>>> HANDOFF  coordinator -> supplier writer: supplier email + brief (customer names removed)
+    {
+      "part_id": "SW-3",
+      "what_changed": "No change: PO-5540 (60 SW-3 steam wands) still arrives on day 11, before the supplier's one-week maintenance closure that starts on day 28.",
+      "orders_at_risk": [],
+      "options": [],
+      "decisions_for_a_person": [],
+      "supplier_questions": []
+    }
+    [tokens] supplier writer: 646 in / 13 out
+
+>>> HANDOFF  supplier writer -> coordinator: NO REPLY NEEDED
+    no reply needed, nothing saved
+
+======================================================================
+SUMMARY
+Drafts saved: 0
+Drafts marked for a person: 0
+Decisions for a person: 0
+Tokens used by each specialist:
+  supply analyst        7,567 in /     528 out
+  supplier writer         646 in /      13 out
+  total                 8,213 in /     541 out

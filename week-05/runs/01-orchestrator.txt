@@ -1,0 +1,271 @@
+From: Karen Walsh <k.walsh@northgatedrive.example>
+Subject: PO-7781 - MC-500 controllers - revised shipment schedule
+Coordinator: orchestrator agent   Model: claude-sonnet-5
+
+    [tokens] orchestrator: 1,502 in / 51 out
+
+CHOICE 1: run_supply_analyst()
+
+>>> HANDOFF  coordinator -> supply analyst: supplier email
+    From: Karen Walsh <k.walsh@northgatedrive.example>
+    Subject: PO-7781 - MC-500 controllers - revised shipment schedule
+    supply analyst tool 1: get_part({"part_id": "MC-500"})
+    supply analyst tool 2: get_orders_for_part({"part_id": "MC-500"})
+    supply analyst tool 3: check_coverage({"part_id": "MC-500", "arrivals": [{"qty": 120, "day": 5}, {"qty": 280, "day": 26}]})
+    [tokens] supply analyst: 9,064 in / 909 out
+
+>>> HANDOFF  supply analyst -> coordinator: brief (3 tool calls)
+    {
+      "part_id": "MC-500",
+      "what_changed": "Instead of all 400 MC-500 controllers arriving on day 5, only 120 will arrive on day 5 and the remaining 280 will arrive on day 26 (three weeks later).",
+      "orders_at_risk": [
+        {
+          "order_id": "O-1043",
+          "customer": "City of Ashford Bike Share",
+          "units_short": 10,
+          "ship_day": 14,
+          "ready_day": 26,
+          "late_penalty": true
+        },
+        {
+          "order_id": "O-1044",
+          "customer": "Main Street Bikes",
+          "units_short": 30,
+          "ship_day": 18,
+          "ready_day": 26,
+          "late_penalty": false
+        },
+        {
+          "order_id": "O-1045",
+          "customer": "Lakeview Rentals",
+          "units_short": 50,
+          "ship_day": 21,
+          "ready_day": 26,
+          "late_penalty": false
+        }
+      ],
+      "options": [],
+      "decisions_for_a_person": [
+        "Decide whether to accept the split shipment (120 day 5 / 280 day 26) as proposed or pursue alternatives with Northgate Drive Systems given the impact on O-1043 (has a late penalty), O-1044, and O-1045.",
+        "Consider contacting the supplier this week to discuss other options, as offered, since no concrete alternative schedule was provided to evaluate.",
+        "Decide how/whether to communicate expected delays to the affected customers, especially City of Ashford Bike Share given the late penalty."
+      ],
+      "supplier_questions": [
+        "Which of Brookfield's customers are most affected by this delay, so Northgate can understand the impact?"
+      ]
+    }
+    [tokens] orchestrator: 2,148 in / 296 out
+
+CHOICE 2: draft_supplier_reply()
+
+>>> HANDOFF  coordinator -> supplier writer: supplier email + brief (customer names removed)
+    {
+      "part_id": "MC-500",
+      "what_changed": "Instead of all 400 MC-500 controllers arriving on day 5, only 120 will arrive on day 5 and the remaining 280 will arrive on day 26 (three weeks later).",
+      "orders_at_risk": [
+        {
+          "order_id": "O-1043",
+          "units_short": 10,
+          "ship_day": 14,
+          "ready_day": 26,
+          "late_penalty": true
+        },
+        {
+          "order_id": "O-1044",
+          "units_short": 30,
+          "ship_day": 18,
+          "ready_day": 26,
+          "late_penalty": false
+        },
+        {
+          "order_id": "O-1045",
+          "units_short": 50,
+          "ship_day": 21,
+          "ready_day": 26,
+          "late_penalty": false
+        }
+      ],
+      "options": [],
+      "decisions_for_a_person": [
+        "Decide whether to accept the split shipment (120 day 5 / 280 day 26) as proposed or pursue alternatives with Northgate Drive Systems given the impact on O-1043 (has a late penalty), O-1044, and O-1045.",
+        "Consider contacting the supplier this week to discuss other options, as offered, since no concrete alternative schedule was provided to evaluate.",
+        "Decide how/whether to communicate expected delays to the affected customers, especially [a customer] given the late penalty."
+      ],
+      "supplier_questions": [
+        "Which of Brookfield's customers are most affected by this delay, so Northgate can understand the impact?"
+      ]
+    }
+    [tokens] supplier writer: 1,140 in / 328 out
+
+>>> HANDOFF  supplier writer -> reviewer: draft for a supplier
+    Subject: RE: PO-7781 - MC-500 controllers - revised shipment schedule
+    
+    Hello Karen,
+    
+    Thank you for the update. To confirm our understanding: 120 of the 400 MC-500 controllers will ship on the original scheduled date, with the remaining 280 following on day 26 (three weeks later).
+    
+    This shortfall affects three of our downstream orders, totaling 90 units short against their ship dates, with delays of up to 12 days on the earliest-affected order. One of these orders carries a late penalty on our side, so minimizing the delay is a priority for us.
+    
+    We're not able to share details on our customers, but we can tell you the impact in units and days as above.
+    
+    Could you let us know if there's any way to ship more than 120 units on the original date, or to pull forward any portion of the remaining 280 units ahead of day 26? Any improvement there would directly reduce our impact.
+    
+    We'll confirm our position by the end of this week, as you requested.
+    
+    Purchasing, Brookfield Bicycle Company
+    [tokens] reviewer: 1,511 in / 1,198 out
+
+>>> HANDOFF  reviewer -> coordinator: REVISE
+    (The reviewer's answer didn't start with APPROVE or REVISE.)
+    APPROVE is not correct here.
+    
+    REVISE
+    
+    3. The draft describes specifics of Brookfield's customer orders to the supplier — it states the downstream impact as "90 units short," "delays of up to 12 days," and "one of these orders carries a late penalty." Even without naming the customers, this reveals order-level details (quantities, lateness, penalty status) that rule 3 says must not go to a supplier. Replace this with a general statement of urgency/impact (e.g., "This shortfall affects several of our customer commitments, including one with contractual penalties for lateness, so minimizing the delay is a priority for us") without quantifying units short, specific day counts tied to customer orders, or confirming which order carries the penalty.
+
+>>> HANDOFF  coordinator -> supplier writer: revision 1 with the reviewer's notes
+    [tokens] supplier writer: 1,791 in / 698 out
+
+>>> HANDOFF  supplier writer -> reviewer: draft for a supplier (revision 1)
+    Subject: RE: PO-7781 - MC-500 controllers - revised shipment schedule
+    
+    Hello Karen,
+    
+    Thank you for the update. To confirm our understanding: 120 of the 400 MC-500 controllers will ship on the original scheduled date, with the remaining 280 following on day 26 (three weeks later).
+    
+    This shortfall affects several of our customer commitments, including at least one with contractual penalties for lateness, so minimizing the delay is a priority for us.
+    
+    We're not able to share details on our customers or their orders, but we appreciate you understanding the urgency on our end.
+    
+    Could you let us know if there's any way to ship more than 120 units on the original date, or to pull forward any portion of the remaining 280 units ahead of day 26? Any improvement there would directly reduce the impact on our side.
+    
+    We'll confirm our position by the end of this week, as you requested.
+    
+    Purchasing, Brookfield Bicycle Company
+    [tokens] reviewer: 1,485 in / 686 out
+
+>>> HANDOFF  reviewer -> coordinator: APPROVE
+    saved week-05/drafts/orchestrator-01-northgate-controller-delay/supplier-reply.md
+
+CHOICE 3: draft_customer_notice({"order_id": "O-1043"})
+
+>>> HANDOFF  coordinator -> customer writer: facts for order O-1043 only
+    {
+      "order_id": "O-1043",
+      "customer": "City of Ashford Bike Share",
+      "model": "Commuter E",
+      "quantity": 100,
+      "planned_ship_day": 14,
+      "expected_ship_day": 26,
+      "days_later": 12
+    }
+    [tokens] customer writer: 353 in / 174 out
+
+>>> HANDOFF  customer writer -> reviewer: draft for a customer
+    Subject: Update on Order O-1043
+    
+    Dear City of Ashford Bike Share,
+    
+    We're writing to update you on Order O-1043 for 100 Commuter E bicycles. This order is now expected to ship on day 26, which is 12 days later than originally planned.
+    
+    We apologize for this delay. It is due to a delay in a part from one of our suppliers.
+    
+    We will keep you informed if there are any further updates to this timeline.
+    
+    Thank you for your understanding and continued partnership.
+    
+    Customer Service, Brookfield Bicycle Company
+    [tokens] reviewer: 616 in / 305 out
+
+>>> HANDOFF  reviewer -> coordinator: APPROVE
+    saved week-05/drafts/orchestrator-01-northgate-controller-delay/customer-O-1043.md  [NEEDS A PERSON: order has a late penalty]
+
+CHOICE 4: draft_customer_notice({"order_id": "O-1044"})
+
+>>> HANDOFF  coordinator -> customer writer: facts for order O-1044 only
+    {
+      "order_id": "O-1044",
+      "customer": "Main Street Bikes",
+      "model": "Cargo E",
+      "quantity": 30,
+      "planned_ship_day": 18,
+      "expected_ship_day": 26,
+      "days_later": 8
+    }
+    [tokens] customer writer: 350 in / 152 out
+
+>>> HANDOFF  customer writer -> reviewer: draft for a customer
+    Subject: Update on Order O-1044
+    
+    Dear Main Street Bikes,
+    
+    We're writing to update you on Order O-1044 for 30 Cargo E bicycles. This order is now expected to ship on day 26, which is 8 days later than originally planned.
+    
+    We apologize for this delay. It is due to a delay in a part from one of our suppliers.
+    
+    We will keep you informed of any further updates regarding this order.
+    
+    Customer Service, Brookfield Bicycle Company
+    [tokens] reviewer: 591 in / 265 out
+
+>>> HANDOFF  reviewer -> coordinator: APPROVE
+    saved week-05/drafts/orchestrator-01-northgate-controller-delay/customer-O-1044.md
+
+CHOICE 5: draft_customer_notice({"order_id": "O-1045"})
+
+>>> HANDOFF  coordinator -> customer writer: facts for order O-1045 only
+    {
+      "order_id": "O-1045",
+      "customer": "Lakeview Rentals",
+      "model": "Commuter E",
+      "quantity": 50,
+      "planned_ship_day": 21,
+      "expected_ship_day": 26,
+      "days_later": 5
+    }
+    [tokens] customer writer: 351 in / 180 out
+
+>>> HANDOFF  customer writer -> reviewer: draft for a customer
+    Subject: Update on Your Order O-1045
+    
+    Dear Lakeview Rentals,
+    
+    We're writing to update you on order O-1045 for 50 units of the Commuter E. This order is now expected to ship 5 days later than planned.
+    
+    We apologize for this delay. It is due to a delay in a part from one of our suppliers.
+    
+    We understand this may affect your plans and appreciate your patience. If you have any questions about your order, please don't hesitate to reach out.
+    
+    Customer Service
+    Brookfield Bicycle Company
+    [tokens] reviewer: 607 in / 205 out
+
+>>> HANDOFF  reviewer -> coordinator: APPROVE
+    saved week-05/drafts/orchestrator-01-northgate-controller-delay/customer-O-1045.md
+    [tokens] orchestrator: 3,549 in / 370 out
+
+CHOICE 6: finish({"summary": "Northgate Drive Systems notified that PO-7781 (400 MC-500 controllers) will now ship in two parts: 120 units on the original date and the remaining 280 units three weeks later (day 26). This delays three customer orders: O-1043 (City of Ashford Bike Share, 10 units short, has a contractual late penalty - flagged for manager review), O-1044 (Main Street Bikes, 30 units short, no penalty), and O-1045 (Lakeview Rentals, 50 units short, no penalty). Drafts prepared and saved for review: a supplier reply asking Northgate to expedite any portion of the delayed units and confirming Brookfield's position will follow by week's end, plus customer delay notices for all three affected orders. A person should decide whether to accept the split shipment as proposed or pursue alternatives with the supplier, and review the O-1043 notice given the late-penalty exposure.", "needs_decision": true})
+
+======================================================================
+SUMMARY
+Drafts saved: 4
+  week-05/drafts/orchestrator-01-northgate-controller-delay/supplier-reply.md
+  week-05/drafts/orchestrator-01-northgate-controller-delay/customer-O-1043.md
+  week-05/drafts/orchestrator-01-northgate-controller-delay/customer-O-1044.md
+  week-05/drafts/orchestrator-01-northgate-controller-delay/customer-O-1045.md
+Drafts marked for a person: 1
+  week-05/drafts/orchestrator-01-northgate-controller-delay/customer-O-1043.md: order has a late penalty
+Decisions for a person: 3
+  - Decide whether to accept the split shipment (120 day 5 / 280 day 26) as proposed or pursue alternatives with Northgate Drive Systems given the impact on O-1043 (has a late penalty), O-1044, and O-1045.
+  - Consider contacting the supplier this week to discuss other options, as offered, since no concrete alternative schedule was provided to evaluate.
+  - Decide how/whether to communicate expected delays to the affected customers, especially City of Ashford Bike Share given the late penalty.
+Tokens used by each specialist:
+  orchestrator          7,199 in /     717 out
+  supply analyst        9,064 in /     909 out
+  supplier writer       2,931 in /   1,026 out
+  reviewer              4,810 in /   2,659 out
+  customer writer       1,054 in /     506 out
+  total                25,058 in /   5,817 out
+Orchestrator's summary for a person:
+    Northgate Drive Systems notified that PO-7781 (400 MC-500 controllers) will now ship in two parts: 120 units on the original date and the remaining 280 units three weeks later (day 26). This delays three customer orders: O-1043 (City of Ashford Bike Share, 10 units short, has a contractual late penalty - flagged for manager review), O-1044 (Main Street Bikes, 30 units short, no penalty), and O-1045 (Lakeview Rentals, 50 units short, no penalty). Drafts prepared and saved for review: a supplier reply asking Northgate to expedite any portion of the delayed units and confirming Brookfield's position will follow by week's end, plus customer delay notices for all three affected orders. A person should decide whether to accept the split shipment as proposed or pursue alternatives with the supplier, and review the O-1043 notice given the late-penalty exposure.
+Person must make a decision: YES
